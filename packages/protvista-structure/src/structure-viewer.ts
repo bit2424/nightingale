@@ -16,17 +16,12 @@ import {
 } from "molstar/lib/mol-model/structure";
 import { PluginLayoutControlsDisplay } from "molstar/lib/mol-plugin/layout";
 import { Script } from "molstar/lib/mol-script/script";
-import { StructureRepresentationPresetProvider } from "molstar/lib/mol-plugin-state/builder/structure/representation-preset";
 import { PluginCommands } from "molstar/lib/mol-plugin/commands";
 import { Color } from "molstar/lib/mol-util/color";
 
 import AfConfidenceScore from "./af-confidence/behavior";
 
 import "molstar/build/viewer/molstar.css";
-
-interface LoadStructureOptions {
-  representationParams?: StructureRepresentationPresetProvider.CommonParams;
-}
 
 const viewerOptions = {
   layoutIsExpanded: false,
@@ -55,10 +50,14 @@ class StructureViewer {
     onHighlightClick: (sequencePositions: number[]) => void
   ) {
     const defaultSpec = DefaultPluginUISpec(); // TODO: Make our own to select only essential plugins
+
     const spec: PluginSpec = {
       actions: defaultSpec.actions,
       behaviors: [
         ...defaultSpec.behaviors,
+        // PluginSpec.Behavior(PluginBehaviors.CustomProps.SecondaryStructure),
+        // PluginSpec.Behavior(PluginBehaviors.CustomProps.ValenceModel),
+        // PluginSpec.Behavior(PluginBehaviors.CustomProps.CrossLinkRestraint),
         PluginSpec.Behavior(AfConfidenceScore, {
           autoAttach: true,
           showTooltip: true,
@@ -133,46 +132,44 @@ class StructureViewer {
     }
   }
 
-  loadPdb(pdb: string, options?: LoadStructureOptions): Promise<void> {
+  async loadPdb(pdb: string): Promise<void> {
     const params = DownloadStructure.createDefaultParams(
       this.plugin.state.data.root.obj!,
       this.plugin
     );
+
     const provider = this.plugin.config.get(
       PluginConfig.Download.DefaultPdbProvider
     )!;
-    return this.plugin
-      .runTask(
-        this.plugin.state.data.applyAction(DownloadStructure, {
-          source: {
-            name: "pdb" as const,
-            params: {
-              provider: {
-                id: pdb,
-                server: {
-                  name: provider,
-                  params: PdbDownloadProvider[provider].defaultValue as any,
-                },
-              },
-              options: {
-                ...params.source.params.options,
-                representationParams: options?.representationParams as any,
+    return this.plugin.runTask(
+      this.plugin.state.data.applyAction(DownloadStructure, {
+        source: {
+          name: "pdb" as const,
+          params: {
+            provider: {
+              id: pdb,
+              server: {
+                name: provider,
+                params: PdbDownloadProvider[provider].defaultValue as any,
               },
             },
+            options: {
+              ...params.source.params.options,
+            },
           },
-        })
-      )
-      .then(() => {
-        this.clearMessages();
-      });
+        },
+      })
+    );
   }
 
-  async loadAF(id: string, url: string): Promise<void> {
+  async loadAF(id: string, url: string): Promise<any> {
     const { plugin } = this;
 
     const data = await plugin.builders.data.download(
       { url, isBinary: false },
-      { state: { isGhost: true } }
+      {
+        state: { isGhost: true },
+      }
     );
 
     const trajectory = await plugin.builders.structure.parseTrajectory(
@@ -180,9 +177,15 @@ class StructureViewer {
       "mmcif"
     );
 
-    return this.plugin.builders.structure.hierarchy
-      .applyPreset(trajectory, "all-models", { useDefaultIfSingleModel: true })
-      .then(() => this.clearMessages());
+    return plugin.builders.structure.hierarchy.applyPreset(
+      trajectory,
+      "default",
+      {
+        structure: { name: "model", params: {} },
+        showUnitcell: false,
+        representationPreset: "auto",
+      }
+    );
   }
 
   highlight(ranges: { start: number; end: number }[]): void {

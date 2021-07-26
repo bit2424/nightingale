@@ -120,7 +120,7 @@ class ProtvistaStructure extends HTMLElement implements NightingaleElement {
   }
 
   get structureId(): string {
-    return this.structureId;
+    return this._structureId;
   }
 
   set structureId(structureId: string) {
@@ -139,7 +139,7 @@ class ProtvistaStructure extends HTMLElement implements NightingaleElement {
       this.manager.register(this);
     }
 
-    this.structureId = this.getAttribute("structureid");
+    this._structureId = this.getAttribute("structureid");
     this._accession = this.getAttribute("accession");
     this._height = this.getAttribute("height") || "480px";
     this._highlight =
@@ -293,6 +293,7 @@ class ProtvistaStructure extends HTMLElement implements NightingaleElement {
       mappings = Object.values(pdbEntry)[0].UniProt[this._accession]?.mappings;
       await this._structureViewer.loadPdb(this._structureId.toLowerCase());
     }
+    this._structureViewer.clearMessages();
     this._selectedMolecule = {
       id: this._structureId,
       mappings,

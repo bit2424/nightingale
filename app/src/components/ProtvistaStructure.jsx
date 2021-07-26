@@ -12,7 +12,7 @@ loadWebComponent("protvista-structure", ProtvistaStructure);
 loadWebComponent("protvista-datatable", ProtvistaDatatable);
 loadWebComponent("protvista-manager", ProtvistaManager);
 
-const selectedId = "1AAP";
+const selectedId = "AF-P05067-F1";
 
 const processData = (xrefs) =>
   xrefs.map(({ id, properties }) => {
